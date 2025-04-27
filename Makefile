@@ -86,6 +86,9 @@ gemini_reduction: gemini_reduction.o
 use_linear: use_linear.o
 	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
 
+use_activation: use_activation.o
+	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
+
 sgemm: sgemm.o
 	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
 

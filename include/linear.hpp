@@ -32,7 +32,7 @@ struct Linear {
 
     ~Linear() = default;
 
-    void forward(cublasHandle_t& cublasHandle, float* device_input_ptr) {
+    void forward(cublasHandle_t& cublasHandle, T* input_ptr) {
         checkCUBLAS(
             cublasSgemm(
                 cublasHandle,
@@ -40,14 +40,14 @@ struct Linear {
                 N, M, K,
                 &alpha,
                 tensor_map.data["weight"], N,
-                device_input_ptr, K,
+                input_ptr, K,
                 &beta,
                 tensor_map.data["output"], N
             )
         );
     }
 
-    void backward(cublasHandle_t& cublasHandle, float* device_input_ptr, float* device_output_ptr) {
+    void backward(cublasHandle_t& cublasHandle, T* input_ptr, T* d_output_ptr) {
         checkCUBLAS(
             cublasSgemm(
                 cublasHandle,
@@ -55,7 +55,7 @@ struct Linear {
                 K, M, N,
                 &alpha,
                 tensor_map.data["weight"], N,
-                device_output_ptr, N,
+                d_output_ptr, N,
                 &beta,
                 tensor_map.data["d_input"], K
             )
@@ -66,8 +66,8 @@ struct Linear {
                 CUBLAS_OP_N, CUBLAS_OP_T,
                 N, K, M,
                 &alpha,
-                device_output_ptr, N,
-                device_input_ptr, K,
+                d_output_ptr, N,
+                input_ptr, K,
                 &beta,
                 tensor_map.data["d_weight"], N
             )
