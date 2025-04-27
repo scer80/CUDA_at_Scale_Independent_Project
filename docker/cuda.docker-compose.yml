@@ -1,0 +1,49 @@
+services:
+  dev:
+    image: cuda-${USER}
+    container_name: cuda-${USER}
+    build:
+      dockerfile: cuda.Dockerfile
+      args:
+        HTTP_PROXY: ${http_proxy}
+        HTTPS_PROXY: ${https_proxy}
+        HOME: ${HOME}
+        USER_NAME: ${USER_NAME}
+        USER_UID: ${USER_UID}
+        USER_GID: ${USER_GID}
+        WORKSPACE: ${WORKSPACE}
+      network: host
+    privileged: true
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+    shm_size: '24G'
+    network_mode: host
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+    environment:
+      - HTTP_PROXY
+      - HTTPS_PROXY
+      - NO_PROXY
+      - https_proxy
+      - http_proxy
+      - no_proxy
+      - REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+    volumes:
+      - type: bind
+        source: ${HOME:?HOME has to be set}
+        target: ${HOME}
+      - type: bind
+        source: /etc/ssl/certs
+        target: /etc/ssl/certs
+      - type: bind
+        source: /mnt/hdd
+        target: /mnt/hdd
+      - type: bind
+        source: /tmp
+        target: /tmp
