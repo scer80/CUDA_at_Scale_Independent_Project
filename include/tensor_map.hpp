@@ -59,9 +59,6 @@ struct TensorMap {
     }
 
     ~TensorMap() {
-        for (const auto& [key, value] : tensor_descriptor) {
-            cudnnDestroyTensorDescriptor(value);
-        }
         for (const auto& [key, value] : data) {
             cudaFree(value);
         }

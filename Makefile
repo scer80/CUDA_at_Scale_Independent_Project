@@ -89,6 +89,12 @@ use_linear: use_linear.o
 use_activation: use_activation.o
 	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
 
+use_mlp: use_mlp.o
+	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
+
+use_softmax: use_softmax.o
+	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
+
 sgemm: sgemm.o
 	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
 

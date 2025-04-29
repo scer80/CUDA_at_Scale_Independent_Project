@@ -1,5 +1,5 @@
-#ifndef _ACTIVATION_H_
-#define _ACTIVATION_H_
+#ifndef _SOFTMAX_H_
+#define _SOFTMAX_H_
 
 #include <memory>
 #include <numeric>
@@ -10,68 +10,65 @@
 #include "tensor_map.hpp"
 
 template <typename T>
-struct Activation {
+struct Softmax {
 
     TensorMap<T> tensor_map;
     const T alpha = 1.0f;
     const T beta = 0.0f;
-    cudnnActivationDescriptor_t activation_descriptor;
+    cudnnSoftmaxAlgorithm_t algorithm;
+    cudnnSoftmaxMode_t mode;
 
-    Activation(const vector<int>& ios) :
+    Softmax(
+        const vector<int>& ios,
+        cudnnSoftmaxAlgorithm_t _algorithm,
+        cudnnSoftmaxMode_t _mode
+    ) :
         tensor_map({
             {"output", ios},
             {"d_input", ios}
-        }),
-        activation_descriptor()
+        })
     {
-        checkCUDNN(cudnnCreateActivationDescriptor(&activation_descriptor));
-        checkCUDNN(cudnnSetActivationDescriptor(
-            activation_descriptor,
-            CUDNN_ACTIVATION_RELU,
-            CUDNN_NOT_PROPAGATE_NAN,
-            0.0));
+        algorithm = _algorithm;
+        mode = _mode;        
     }
 
-    ~Activation() = default;
+    ~Softmax() = default;
 
     void forward(
         cudnnHandle_t& cudnnHandle,
-        cudnnTensorDescriptor_t& input_tensor_descriptor,
         T* input_ptr
     ) {
         checkCUDNN(
-            cudnnActivationForward(
+            cudnnSoftmaxForward(
                 cudnnHandle,
-                activation_descriptor,
+                algorithm,
+                mode,
                 &alpha,
-                input_tensor_descriptor,
+                tensor_map.tensor_descriptor["output"],
                 input_ptr,
                 &beta,
                 tensor_map.tensor_descriptor["output"],
                 tensor_map.data["output"]
             )
         );
-
-        checkCUDA(cudaDeviceSynchronize()); 
+        checkCUDA(cudaDeviceSynchronize());
     }
 
     void backward(
         cudnnHandle_t& cudnnHandle,
-        cudnnTensorDescriptor_t& input_tensor_descriptor,
         T* input_ptr,
         T* d_output_ptr
     ) {
         checkCUDNN(
-            cudnnActivationBackward(
+            cudnnSoftmaxBackward(
                 cudnnHandle,
-                activation_descriptor,
+                algorithm,
+                mode,
                 &alpha,
                 tensor_map.tensor_descriptor["output"],
                 tensor_map.data["output"],                
                 tensor_map.tensor_descriptor["output"],
                 d_output_ptr,
-                input_tensor_descriptor,
-                input_ptr,
                 &beta,
                 tensor_map.tensor_descriptor["d_input"],
                 tensor_map.data["d_input"]

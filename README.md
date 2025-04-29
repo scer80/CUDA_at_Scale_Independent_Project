@@ -31,7 +31,7 @@ make download
 **Build `mnist_export`**
 
 ```shell
-build mnist_export
+make mnist_export
 ```
 
 **Execute `mnist_export`**

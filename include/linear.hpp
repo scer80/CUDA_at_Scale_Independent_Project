@@ -45,6 +45,7 @@ struct Linear {
                 tensor_map.data["output"], N
             )
         );
+        checkCUDA(cudaDeviceSynchronize());
     }
 
     void backward(cublasHandle_t& cublasHandle, T* input_ptr, T* d_output_ptr) {
@@ -72,6 +73,7 @@ struct Linear {
                 tensor_map.data["d_weight"], N
             )
         );
+        checkCUDA(cudaDeviceSynchronize());
     }
 };
 
