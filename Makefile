@@ -101,6 +101,9 @@ use_softmax: use_softmax.o
 use_nll_loss: $(SRC_DIR)/use_nll_loss.cu
 	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
 
+use_fused_softmax_nll_loss: $(SRC_DIR)/use_fused_softmax_nll_loss.cu
+	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
+
 sgemm: sgemm.o
 	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
 
