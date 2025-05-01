@@ -68,6 +68,9 @@ download:
 %.o: $(SRC_DIR)/%.cpp
 	$(CC) $(INCLUDES) -c $< -o $@
 
+%.o: $(SRC_DIR)/%.cu
+	$(NVCC) $(INCLUDES) -c $< -o $@
+
 mnist_export: mnist_export.o mnist_dataloader.o
 	$(CC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
 
@@ -93,6 +96,9 @@ use_mlp: use_mlp.o
 	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
 
 use_softmax: use_softmax.o
+	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
+
+use_nll_loss: $(SRC_DIR)/use_nll_loss.cu
 	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
 
 sgemm: sgemm.o
