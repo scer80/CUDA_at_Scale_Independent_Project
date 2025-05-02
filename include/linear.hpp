@@ -8,6 +8,7 @@
 
 #include "error_checks.hpp"
 #include "tensor_map.hpp"
+#include "utils.hpp"
 
 template <typename T>
 struct Linear {
@@ -46,6 +47,15 @@ struct Linear {
             )
         );
         checkCUDA(cudaDeviceSynchronize());
+        // float t[2];
+        // std::cout << "Linear forward\n";
+        // cudaMemcpy(t, input_ptr, 4 *sizeof(float), cudaMemcpyDeviceToHost);
+        // print_2d("a", t, 2, 2);
+        // cudaMemcpy(t, tensor_map.data["weight"], 4 *sizeof(float), cudaMemcpyDeviceToHost);
+        // print_2d("b", t, 2, 2);
+        // cudaMemcpy(t, tensor_map.data["output"], 4 *sizeof(float), cudaMemcpyDeviceToHost);
+        // print_2d("c", t, 2, 2);
+        // std::cout << "-----\n";
     }
 
     void backward(cublasHandle_t& cublasHandle, T* input_ptr, T* d_output_ptr) {
@@ -74,6 +84,16 @@ struct Linear {
             )
         );
         checkCUDA(cudaDeviceSynchronize());
+        // float t[2];
+        // std::cout << "Linear Backward\n";
+        // cudaMemcpy(t, d_output_ptr, 4 *sizeof(float), cudaMemcpyDeviceToHost);
+        // print_2d("d_o", t, 2, 2);
+        // cudaMemcpy(t, input_ptr, 4 *sizeof(float), cudaMemcpyDeviceToHost);
+        // print_2d("i", t, 2, 2);
+        // cudaMemcpy(t, tensor_map.data["d_weight"], 4 *sizeof(float), cudaMemcpyDeviceToHost);
+        // print_2d("dw", t, 2, 2);
+        // std::cout << "-----\n";
+
     }
 };
 

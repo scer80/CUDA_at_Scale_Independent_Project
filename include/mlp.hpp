@@ -9,8 +9,9 @@
 
 #include "activation.hpp"
 #include "error_checks.hpp"
+#include "fused_softmax_nll_loss.cuh"
 #include "linear.hpp"
-#include "softmax.hpp"
+#include "optimizer.cuh"
 #include "tensor_map.hpp"
 
 template <typename T>
@@ -19,8 +20,7 @@ struct MLP {
     vector<int> layer_sizes;
     vector<Linear<T>> layers;
     vector<Activation<T>> activations;
-    Softmax<T> softmax;
-    Softmax<T> log_softmax;
+    SoftmaxNLLLoss<float> softmax_nll_loss;
 
     MLP(
         const vector<int>& prefix_sizes,
@@ -29,15 +29,12 @@ struct MLP {
         layer_sizes(sizes),
         layers(),
         activations(),
-        softmax(
-            {reduce(prefix_sizes.begin(), prefix_sizes.end(), 1, multiplies<int>()), sizes.back(), 1, 1},
-            CUDNN_SOFTMAX_ACCURATE,
-            CUDNN_SOFTMAX_MODE_CHANNEL
-        ),
-        log_softmax(
-            {reduce(prefix_sizes.begin(), prefix_sizes.end(), 1, multiplies<int>()), sizes.back(), 1, 1},
-            CUDNN_SOFTMAX_LOG,
-            CUDNN_SOFTMAX_MODE_CHANNEL
+        softmax_nll_loss(
+            [&]() {
+                vector<int> combined_sizes = prefix_sizes;
+                combined_sizes.push_back(sizes.back());
+                return combined_sizes;
+            }()
         )
     {
         for (size_t i = 0; i < sizes.size() - 1; ++i) {
@@ -51,15 +48,17 @@ struct MLP {
         }
     }
 
-    ~MLP()
-    {}
+    ~MLP() = default;
 
     void forward(
         cublasHandle_t& cublasHandle,
         cudnnHandle_t& cudnnHandle,
-        T* input_ptr
+        T* input,
+        int* target_labels,
+        bool compute_probs,
+        bool compute_loss        
     ) {
-        T* layer_input = input_ptr;
+        T* layer_input = input;
         for (size_t i = 0; i < layers.size(); ++i) {
             layers[i].forward(cublasHandle, layer_input);
             activations[i].forward(
@@ -68,39 +67,94 @@ struct MLP {
                 layers[i].tensor_map.data["output"]
             );
             layer_input = activations[i].tensor_map.data["output"];
+            // layer_input = layers[i].tensor_map.data["output"];
         }
-        softmax.forward(cudnnHandle, activations.back().tensor_map.data["output"]);
-        log_softmax.forward(cudnnHandle, activations.back().tensor_map.data["output"]);
+        softmax_nll_loss.forward(
+            activations.back().tensor_map.data["output"], target_labels, compute_probs, compute_loss
+        );
+        // softmax_nll_loss.forward(
+        //     layers.back().tensor_map.data["output"], target_labels, compute_probs, compute_loss
+        // );
+        checkCUDA(cudaDeviceSynchronize());
     }
 
     void backward(
         cublasHandle_t& cublasHandle,
         cudnnHandle_t& cudnnHandle,
-        T* input_ptr,
-        T* d_output_ptr
+        T* input,
+        int* target_labels
     ) {
-        softmax.backward(cudnnHandle, input_ptr, d_output_ptr);
-        log_softmax.backward(cudnnHandle, input_ptr, d_output_ptr);
+        softmax_nll_loss.backward(softmax_nll_loss.tensor_map.data["probs"], target_labels);
 
-        T* layer_d_output_ptr = log_softmax.tensor_map.data["d_input"];
+        T* layer_d_output = softmax_nll_loss.tensor_map.data["d_logits"];
 
-        for (size_t i = layers.size() - 1; i > static_cast<size_t>(-1); --i) {
+        for (int i = layers.size() - 1; i > static_cast<int>(-1); --i) {
+            // std::cout << "MLP " << i << std::endl;
             activations[i].backward(
                 cudnnHandle,
                 layers[i].tensor_map.tensor_descriptor["output"],
                 layers[i].tensor_map.data["output"],
-                layer_d_output_ptr
+                layer_d_output
             );
-            T* layer_input_ptr = input_ptr;
+            
+            T* layer_input_ptr = input;
             if (i > 0) {
-                activations[i - 1].tensor_map.data["output"];
+                layer_input_ptr = activations[i - 1].tensor_map.data["output"];
             }
-
+            
             layers[i].backward(
                 cublasHandle,
                 layer_input_ptr,
                 activations[i].tensor_map.data["d_input"]
             );
+            layer_d_output = layers[i].tensor_map.data["d_input"];
+            // layers[i].backward(
+            //     cublasHandle,
+            //     layer_input_ptr,
+            //     layer_d_output
+            // );
+        }
+    }
+
+    void update_weights(float learning_rate) {
+        for (size_t i = 0; i < layers.size(); ++i) {
+            // Update weights
+            int nb_weights = size_from_dims(layers[i].tensor_map.dims["weight"]);
+            int weights_per_thread = 1;
+            int num_threads = 256;
+            int weights_per_block = num_threads * weights_per_thread;
+            int num_blocks = (nb_weights + weights_per_block - 1) / weights_per_block;
+            weight_update_kernel<<<num_blocks, num_threads>>>(
+                layers[i].tensor_map.data["weight"],
+                layers[i].tensor_map.data["d_weight"],
+                learning_rate,
+                nb_weights,
+                weights_per_thread
+            );
+        }
+    }
+
+    void init_weights() {
+        for (size_t i = 0; i < layers.size(); ++i) {
+            int nb_weights = size_from_dims(layers[i].tensor_map.dims["weight"]);
+            float weights_init[nb_weights];
+            // initialize weights
+            for (int j = 0; j < nb_weights; ++j) {
+                weights_init[j] = static_cast<float>(rand()) / RAND_MAX - 0.5f;
+            }
+            // copy weights to device
+            // std::cout << i << " " << nb_weights << std::endl << std::flush;
+            
+            // std::cout << layers[0].tensor_map.data["weight"] << std::endl;
+            // std::cout << layers[1].tensor_map.data["weight"] << std::endl;
+            
+            checkCUDA(cudaMemcpy(
+                layers[i].tensor_map.data["weight"],
+                weights_init,
+                nb_weights * sizeof(float),
+                cudaMemcpyHostToDevice
+            ));
+            checkCUDA(cudaDeviceSynchronize());
         }
     }
 };

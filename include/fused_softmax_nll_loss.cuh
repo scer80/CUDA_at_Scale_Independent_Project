@@ -108,6 +108,7 @@ struct SoftmaxNLLLoss {
 
         int nb_blocks = (nb_samples + nb_threads_per_block - 1) / nb_threads_per_block;
 
+        cudaMemset(tensor_map.data["nll_sum"], 0, sizeof(T));
         softmax_nll_loss_forward_kernel<T, int><<<nb_blocks, nb_threads_per_block>>>(
             logits,
             target_labels,

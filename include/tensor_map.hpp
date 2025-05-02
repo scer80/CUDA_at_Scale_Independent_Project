@@ -58,9 +58,12 @@ struct TensorMap {
         }
     }
 
-    ~TensorMap() {
+    ~TensorMap() = default;
+
+    void deallocate() {
         for (const auto& [key, value] : data) {
-            cudaFree(value);
+            checkCUDA(cudaFree(value));
+            checkCUDNN(cudnnDestroyTensorDescriptor(tensor_descriptor[key]));
         }
     }
 
