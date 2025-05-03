@@ -3,26 +3,28 @@ export USER_NAME=$(shell whoami)
 export USER_UID=$(shell id -u)
 export USER_GID=$(shell id -g)
 
-CC := g++
+CXX := g++
 NVCC := /usr/local/cuda/bin/nvcc
 
 DATA_DIR = data
-GZ_DIR := $(DATA_DIR)/gz
-MNIST_DIR := $(DATA_DIR)/mnist
+MNIST_DIR := $(DATA_DIR)/MNIST
+MNIST_GZ_DIR := $(MNIST_DIR)/gz
+MNIST_RAW_DIR := $(MNIST_DIR)/raw
 
 SRC_DIR := src
 INCLUDES := \
 	-Iinclude \
-	-I/usr/local/cuda-12.2/targets/x86_64-linux/include \
+	-I/opt/conda/lib/python3.11/site-packages/nvidia/cudnn/include \
 	-I/usr/include/opencv4 \
 	-I/usr/local/lib/python3.10/dist-packages/include \
 	-I/opt/cudnn-frontend/samples/cpp
-LIB_DIRS := -L/usr/local/cuda-11.8/targets/x86_64-linux/lib -L/usr/lib/x86_64-linux-gnu
+LIB_DIRS := -L/opt/conda/lib/python3.11/site-packages/nvidia/cudnn/lib/ -L/usr/lib/x86_64-linux-gnu
 LIBS := \
 	-lopencv_core -lopencv_imgcodecs -lopencv_highgui \
 	-lcudnn -lcudnn_graph -lcudnn_cnn -lcudart \
-	-lCatch2 \
 	-lcublas
+# 
+# -lCatch2 \
 
 DOWNLOAD_COMMAND=wget --no-check-certificate
 MNIST_URL=https://ossci-datasets.s3.amazonaws.com/mnist
@@ -52,30 +54,30 @@ stop:
 .PHONY: download clean
 
 download:
-	mkdir -p $(GZ_DIR) $(MNIST_DIR)
+	mkdir -p $(MNIST_GZ_DIR) $(MNIST_RAW_DIR)
 	@for file in $(MNIST_FILES); do \
-		if [ ! -f "$(GZ_DIR)/$$file" ]; then \
+		if [ ! -f "$(MNIST_GZ_DIR)/$$file" ]; then \
 			echo "Downloading $$file..."; \
-			$(DOWNLOAD_COMMAND) -P $(GZ_DIR) $(MNIST_URL)/$$file || exit 1; \
+			$(DOWNLOAD_COMMAND) -P $(MNIST_GZ_DIR) $(MNIST_URL)/$$file || exit 1; \
 		else \
 			echo "$$file already exists, skipping."; \
 		fi; \
 	done
 	@for file in $(MNIST_FILES); do \
-		gunzip -c $(GZ_DIR)/$$file > $(MNIST_DIR)/$${file%.gz}; \
+		gunzip -c $(MNIST_GZ_DIR)/$$file > $(MNIST_RAW_DIR)/$${file%.gz}; \
 	done
 
 %.o: $(SRC_DIR)/%.cpp
-	$(CC) $(INCLUDES) -c $< -o $@
+	$(CXX) $(INCLUDES) -c $< -o $@
 
 %.o: $(SRC_DIR)/%.cu
 	$(NVCC) $(INCLUDES) -c $< -o $@
 
 mnist_export: mnist_export.o mnist_dataloader.o
-	$(CC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
+	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
 
-mnist_train: mnist_train.o mnist_dataloader.o mlp.o
-	$(CC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
+mnist_train: mnist_train.o mnist_dataloader.o
+	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
 
 temp: temp.o
 	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)

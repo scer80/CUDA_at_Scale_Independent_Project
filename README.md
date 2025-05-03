@@ -42,4 +42,14 @@ make mnist_export
 
 ### Train :muscle: <a name="train"></a>
 
+**Build `mnist_train`**
 
+```shell
+make mnist_train
+```
+
+**Execute `mnist_export`**
+
+```shell
+./mnist_train --epochs 10 --batch_size 4
+```

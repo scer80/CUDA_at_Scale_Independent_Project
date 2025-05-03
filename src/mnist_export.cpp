@@ -47,10 +47,10 @@ int main(int argc, char* argv[]) {
 
     try {
         MnistDataloader loader(
-            "data/mnist/train-images-idx3-ubyte",
-            "data/mnist/train-labels-idx1-ubyte",
-            "data/mnist/t10k-images-idx3-ubyte",
-            "data/mnist/t10k-labels-idx1-ubyte"
+            "data/MNIST/raw/train-images-idx3-ubyte",
+            "data/MNIST/raw/train-labels-idx1-ubyte",
+            "data/MNIST/raw/t10k-images-idx3-ubyte",
+            "data/MNIST/raw/t10k-labels-idx1-ubyte"
         );
 
         if (dataset == "test") {

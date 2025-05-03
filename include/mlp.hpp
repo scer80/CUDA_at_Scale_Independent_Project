@@ -137,16 +137,15 @@ struct MLP {
     void init_weights() {
         for (size_t i = 0; i < layers.size(); ++i) {
             int nb_weights = size_from_dims(layers[i].tensor_map.dims["weight"]);
+            float factor = sqrt(6 / layers[i].tensor_map.dims["weight"].front());  // Uniform He 
             float weights_init[nb_weights];
             // initialize weights
             for (int j = 0; j < nb_weights; ++j) {
-                weights_init[j] = static_cast<float>(rand()) / RAND_MAX - 0.5f;
+                float random_value = static_cast<float>(rand()) / RAND_MAX;
+                random_value -= 0.5f;
+                // random_value *= factor;
+                weights_init[j] = random_value;
             }
-            // copy weights to device
-            // std::cout << i << " " << nb_weights << std::endl << std::flush;
-            
-            // std::cout << layers[0].tensor_map.data["weight"] << std::endl;
-            // std::cout << layers[1].tensor_map.data["weight"] << std::endl;
             
             checkCUDA(cudaMemcpy(
                 layers[i].tensor_map.data["weight"],

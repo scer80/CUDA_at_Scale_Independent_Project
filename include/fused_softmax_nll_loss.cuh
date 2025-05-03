@@ -64,12 +64,23 @@ __global__ void softmax_nll_loss_backward_kernel(
     IndexType index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index >= nb_samples) return;
 
+    DataType div_factor = 1.0f / static_cast<DataType>(nb_samples);
+
     for (IndexType class_index = 0; class_index < nb_classes; ++class_index) {
         if (class_index == target_labels[index]) {
-            d_logits[index * nb_classes + class_index] = probs[index * nb_classes + class_index] - 1.0f;
+            d_logits[index * nb_classes + class_index] = (probs[index * nb_classes + class_index] - 1.0f) * div_factor;
         } else {
-            d_logits[index * nb_classes + class_index] = probs[index * nb_classes + class_index];
+            d_logits[index * nb_classes + class_index] = probs[index * nb_classes + class_index] * div_factor;
         }
+    }
+}
+
+
+template <typename DataType>
+__global__ void div_by_constant_kernel(DataType* nll_mean, const DataType* nll_sum, DataType div) {
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index == 0) {
+        nll_mean[index] = nll_sum[index] / div;
     }
 }
 
@@ -87,8 +98,9 @@ struct SoftmaxNLLLoss {
             {"logits", ios},
             {"probs", ios},
             {"log_probs", ios},
-            {"nll", {1, 1}},
+            {"nll", vector<int>(ios.begin(), ios.end() - 1)},
             {"nll_sum", {1, 1}},
+            {"nll_mean", {1, 1}},
             {"d_logits", ios}
         })
     {
@@ -109,6 +121,7 @@ struct SoftmaxNLLLoss {
         int nb_blocks = (nb_samples + nb_threads_per_block - 1) / nb_threads_per_block;
 
         cudaMemset(tensor_map.data["nll_sum"], 0, sizeof(T));
+        cudaMemset(tensor_map.data["nll_mean"], 0, sizeof(T));
         softmax_nll_loss_forward_kernel<T, int><<<nb_blocks, nb_threads_per_block>>>(
             logits,
             target_labels,
@@ -121,6 +134,14 @@ struct SoftmaxNLLLoss {
             compute_probs,
             compute_loss
         );
+        checkCUDA(cudaDeviceSynchronize());
+        if (compute_loss) {
+            div_by_constant_kernel<T><<<1, 1>>>(
+                tensor_map.data["nll_mean"],
+                tensor_map.data["nll_sum"],
+                static_cast<float>(nb_samples * nb_classes)
+            );
+        }
     }
 
     void backward(
@@ -139,6 +160,7 @@ struct SoftmaxNLLLoss {
             nb_samples,
             nb_classes
         );
+        checkCUDA(cudaDeviceSynchronize());
     }
 };
 

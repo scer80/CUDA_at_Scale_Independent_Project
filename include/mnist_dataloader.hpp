@@ -9,7 +9,8 @@
 
 #define MNIST_IMAGE_HEIGHT 28
 #define MNIST_IMAGE_WIDTH 28
-
+#define MNIST_IMAGE_SIZE (MNIST_IMAGE_HEIGHT * MNIST_IMAGE_WIDTH)
+#define MNIST_NB_CLASSES 10
 
 struct ImageData {
     std::vector<std::vector<uint8_t>> images;
