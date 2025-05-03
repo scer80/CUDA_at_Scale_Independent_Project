@@ -23,8 +23,6 @@ LIBS := \
 	-lopencv_core -lopencv_imgcodecs -lopencv_highgui \
 	-lcudnn -lcudnn_graph -lcudnn_cnn -lcudart \
 	-lcublas
-# 
-# -lCatch2 \
 
 DOWNLOAD_COMMAND=wget --no-check-certificate
 MNIST_URL=https://ossci-datasets.s3.amazonaws.com/mnist
@@ -77,36 +75,6 @@ mnist_export: mnist_export.o mnist_dataloader.o
 	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
 
 mnist_train: mnist_train.o mnist_dataloader.o
-	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
-
-temp: temp.o
-	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
-
-cudnn_backend: cudnn_backend.o
-	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
-
-gemini_reduction: gemini_reduction.o
-	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
-
-use_linear: use_linear.o
-	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
-
-use_activation: use_activation.o
-	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
-
-use_mlp: use_mlp.o
-	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
-
-use_softmax: use_softmax.o
-	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
-
-use_nll_loss: $(SRC_DIR)/use_nll_loss.cu
-	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
-
-use_fused_softmax_nll_loss: $(SRC_DIR)/use_fused_softmax_nll_loss.cu
-	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
-
-sgemm: sgemm.o
 	$(NVCC) $(INCLUDES) $(LIB_DIRS) $^ -o $@ $(LIBS)
 
 clean:

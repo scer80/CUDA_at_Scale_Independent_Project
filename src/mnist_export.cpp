@@ -61,9 +61,7 @@ int main(int argc, char* argv[]) {
     } catch (const exception& e) {
         cerr << "Error: " << e.what() << "\n";
         return 1;
-    }
-
-    
+    }    
 
     auto label = static_cast<int>(data.labels[index]);
     auto image = data.images[index];

@@ -51,5 +51,5 @@ make mnist_train
 **Execute `mnist_export`**
 
 ```shell
-./mnist_train --epochs 10 --batch_size 4
+./mnist_train --lr 1e-3 --epochs 10 --batch_size 50
 ```

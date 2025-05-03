@@ -133,8 +133,6 @@ int main(int argc, char* argv[]) {
 
         data["test"] = loader.read_test_data();
         data["train"] = loader.read_training_data();
-        // data["train"].images = vector<vector<uint8_t>>(data["train"].images.begin(), data["train"].images.begin() + 60);
-        // data["train"].labels = vector<uint8_t>(data["train"].labels.begin(), data["train"].labels.begin() + 60);
     } catch (const exception& e) {
         cerr << "\033[31m\nError: " << e.what() << "\033[0m\n";
         return 1;
@@ -188,9 +186,6 @@ int main(int argc, char* argv[]) {
                     target_labels["host"] + sample_index,
                     data["train"],                    
                     train_indices[start_index + sample_index]
-                    // start_index + sample_index
-                    // train_indices[sample_index]
-                    // batch_index * batch_size + sample_index
                 );
             }
             

@@ -67,14 +67,10 @@ struct MLP {
                 layers[i].tensor_map.data["output"]
             );
             layer_input = activations[i].tensor_map.data["output"];
-            // layer_input = layers[i].tensor_map.data["output"];
         }
         softmax_nll_loss.forward(
             activations.back().tensor_map.data["output"], target_labels, compute_probs, compute_loss
         );
-        // softmax_nll_loss.forward(
-        //     layers.back().tensor_map.data["output"], target_labels, compute_probs, compute_loss
-        // );
         checkCUDA(cudaDeviceSynchronize());
     }
 
@@ -89,7 +85,6 @@ struct MLP {
         T* layer_d_output = softmax_nll_loss.tensor_map.data["d_logits"];
 
         for (int i = layers.size() - 1; i > static_cast<int>(-1); --i) {
-            // std::cout << "MLP " << i << std::endl;
             activations[i].backward(
                 cudnnHandle,
                 layers[i].tensor_map.tensor_descriptor["output"],
@@ -108,17 +103,11 @@ struct MLP {
                 activations[i].tensor_map.data["d_input"]
             );
             layer_d_output = layers[i].tensor_map.data["d_input"];
-            // layers[i].backward(
-            //     cublasHandle,
-            //     layer_input_ptr,
-            //     layer_d_output
-            // );
         }
     }
 
     void update_weights(float learning_rate) {
         for (size_t i = 0; i < layers.size(); ++i) {
-            // Update weights
             int nb_weights = size_from_dims(layers[i].tensor_map.dims["weight"]);
             int weights_per_thread = 1;
             int num_threads = 256;
