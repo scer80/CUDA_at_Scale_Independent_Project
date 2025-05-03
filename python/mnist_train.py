@@ -9,19 +9,13 @@ import torch.optim as optim
 class SimpleNN(nn.Module):
     def __init__(self):
         super(SimpleNN, self).__init__()
-        # self.fc1 = nn.Linear(28 * 28, 512, bias=False)
-        # self.fc2 = nn.Linear(512, 256, bias=False)
-        # self.fc3 = nn.Linear(256, 64, bias=False)
-        # self.fc4 = nn.Linear(64, 10, bias=False)
-        self.fc1 = nn.Linear(28 * 28, 10, bias=False)
+        self.fc1 = nn.Linear(28 * 28, 32, bias=False)
+        self.fc2 = nn.Linear(32, 10, bias=False)
 
     def forward(self, x):
         x = x.view(-1, 28 * 28)
-        # x = torch.relu(self.fc1(x))
-        # x = torch.relu(self.fc2(x))
-        # x = torch.relu(self.fc3(x))
-        # x = torch.relu(self.fc4(x))
         x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
         return x
 
 
@@ -67,7 +61,7 @@ def main():
     # Placeholder for training loop or further processing
     print("MNIST dataset loaded and model initialized.")
 
-    epochs = 1
+    epochs = 10
     for epoch in range(epochs):
         print(f"Epoch {epoch+1}/{epochs}")
         model.train()

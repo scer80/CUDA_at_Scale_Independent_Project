@@ -160,7 +160,7 @@ int main(int argc, char* argv[]) {
     checkCUDA(cudaMalloc(&input["device"], batch_size * MNIST_IMAGE_SIZE * sizeof(float)));
     checkCUDA(cudaMalloc(&target_labels["device"], batch_size * sizeof(int)));
 
-    vector<int> hidden_layer_sizes = {64, 16};
+    vector<int> hidden_layer_sizes = {32};
     vector<int> mlp_sizes = {MNIST_IMAGE_SIZE};
     mlp_sizes.insert(mlp_sizes.end(), hidden_layer_sizes.begin(), hidden_layer_sizes.end());
     mlp_sizes.push_back(MNIST_NB_CLASSES);

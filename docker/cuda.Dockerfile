@@ -59,19 +59,20 @@ RUN cd opt/ \
     && cmake -DCUDNN_PATH=/usr/include/x86_64-linux-gnu -DCUDAToolkit_ROOT=/usr/local/cuda-11.8  ../ \
     && cmake --build . -j16
 
-# RUN curl -o ~/miniconda.sh -O https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
-#     chmod +x ~/miniconda.sh && \
-#     ~/miniconda.sh -b -p /opt/conda && \
-#     rm ~/miniconda.sh && \
-#     /opt/conda/bin/conda clean -ya
+RUN apt update \
+    && apt install -y \
+    python3.10 \
+    python3-virtualenv \
+    python3-distutils \
+    python3-pip \
+    python3-apt \
+    python-is-python3
 
-# ENV PATH /opt/conda/bin:$PATH
-# RUN conda install -y python=3.11 && conda clean -ya
+RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
-# RUN pip install --upgrade pip setuptools
-# RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-
-
+RUN pip install \
+    nvidia_cudnn_frontend \
+    tqdm
 
 ARG HOME
 ARG USER_NAME
